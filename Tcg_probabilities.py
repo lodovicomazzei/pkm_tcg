@@ -94,6 +94,10 @@ def compute_probabilities(Hands, evs, max_turn):
     # Initialize a dictionary to store counts for each combination by turn
     counts = {key: [0] * max_turn for key in combinations_dict.keys()}
 
+    # Additional categories for EVS of specific lengths
+    at_least_one_len_2 = [0] * max_turn
+    at_least_one_len_3 = [0] * max_turn
+
     # Iterate through all simulations
     for sim_id, hands in Hands.items():
         # Iterate through each turn
@@ -104,32 +108,30 @@ def compute_probabilities(Hands, evs, max_turn):
                 for key, combo in combinations_dict.items():
                     if combo.issubset(hand_set):
                         counts[key][turn] += 1
+                # Check for at least one EVS of specific lengths
+                for evs_group in evs:
+                    evs_set = set(evs_group.keys())
+                    if evs_set.issubset(hand_set):
+                        if len(evs_group) == 2:
+                            at_least_one_len_2[turn] += 1
+                        elif len(evs_group) == 3:
+                            at_least_one_len_3[turn] += 1
 
     # Convert counts to probabilities
     tot_sims = len(Hands)
     probabilities = {key: [count / tot_sims for count in counts[key]] for key in counts.keys()}
+    probabilities["At least one EVS (len 2)"] = [count / tot_sims for count in at_least_one_len_2]
+    probabilities["At least one EVS (len 3)"] = [count / tot_sims for count in at_least_one_len_3]
 
     return probabilities
-
-def validate_deck_size(evs, sp):
-    total_cards = sum(sum(line.values()) for line in evs) + sum(sp.values())
-    if total_cards != 20:
-        st.error(f"Invalid deck size: {total_cards} cards. Deck must contain exactly 20 cards.")
-        return False
-    st.success(f"Deck size is valid: {total_cards} cards.")
-    return True
-
-
 
 def plot_all_probabilities(probabilities, max_turn):
     plt.figure(figsize=(15, 10))
     for key, probs in probabilities.items():
         x = range(max_turn)
-        y = [p * 100 for p in probs]
-        plt.plot(x, y, label=key)
-        for xi, yi in zip(x, y):
-            plt.scatter(xi, yi, color='black')
-            plt.text(xi, yi + 1, f'{yi:.1f}%', ha='center', fontsize=8)
+        y = [p * 100 for p in probs]  # Convert probabilities to percentages
+        plt.plot(x, y, label=key, linestyle='-', marker='o')
+
     plt.xlabel('Turn')
     plt.ylabel('Probability (%)')
     plt.title('Probabilities of EVS Combinations Over Turns')
@@ -140,23 +142,30 @@ def plot_all_probabilities(probabilities, max_turn):
 # Streamlit Interface
 st.title("EVS Probability Simulation")
 
-# Input: Evolution Lines and Quantities
-evs_input = st.text_area(
-    "Enter Evolution Lines and Quantities (e.g., [{'bulba': 2, 'ivy': 2, 'veno': 2}, {'geodude': 2, 'graveler': 2, 'golem': 2}, {'mew': 1}])",
-    "[{'bulba': 2, 'ivy': 2, 'veno': 2}, {'geodude': 2, 'graveler': 2, 'golem': 2}, {'mew': 1}]"
-)
-evs = eval(evs_input)
+# Input: Evolution Lines
+st.header("Enter Evolution Lines and Quantities")
+evs = []
+for i in range(1, 4):  # Allow 3 evolution lines
+    st.subheader(f"Evolution Line {i}")
+    cards = st.text_input(f"Enter cards for line {i} (comma-separated):", key=f"line_{i}")
+    quantities = st.text_input(f"Enter quantities for line {i} (comma-separated, same order):", key=f"quantities_{i}")
+    if cards and quantities:
+        card_list = cards.split(",")
+        quantity_list = [int(x) for x in quantities.split(",")]
+        evs.append(dict(zip(card_list, quantity_list)))
+
+# Input: Spells
+st.header("Enter Spell Cards and Quantities")
+sp_cards = st.text_input("Enter spell cards (comma-separated):")
+sp_quantities = st.text_input("Enter spell quantities (comma-separated, same order):")
+sp = {}
+if sp_cards and sp_quantities:
+    sp_card_list = sp_cards.split(",")
+    sp_quantity_list = [int(x) for x in sp_quantities.split(",")]
+    sp = dict(zip(sp_card_list, sp_quantity_list))
 
 # Determine Basics
 basics = [list(line.keys())[0] for line in evs]
-
-# Input: SP Cards
-sp_input = st.text_area("Enter Spell Cards with counts (e.g., {'pokeball': 2, 'oak': 2, 'sabrina': 2, 'pokeflute': 1})", "{'pokeball': 2, 'oak': 2, 'sabrina': 2, 'pokeflute': 1}")
-sp = eval(sp_input)
-
-# Streamlit integration for validation
-if not validate_deck_size(evs, sp):
-    st.stop()  # Stop execution if the deck size is invalid
 
 # Input: Number of Simulations
 num_simulations = st.number_input("Enter Number of Simulations", min_value=1, value=10000, step=1)
@@ -164,16 +173,36 @@ num_simulations = st.number_input("Enter Number of Simulations", min_value=1, va
 # Run Simulation Button
 if st.button("Run Simulation"):
     deck = make_deck(evs, sp)
-    Hands = run_N_hands(deck, basics, num_simulations)
-    max_turn = 9
-    probabilities = compute_probabilities(Hands, evs, max_turn)
-    
-    # Plot and Show Results
-    plt = plot_all_probabilities(probabilities, max_turn)
-    st.pyplot(plt.gcf())
-    
-    # Save Option
-    save_plot = st.checkbox("Save Plot as PNG")
-    if save_plot:
-        plt.savefig("evs_probabilities.png")
-        st.success("Plot saved as 'evs_probabilities.png'.")
+    total_cards = len(deck)
+    if total_cards != 20:
+        st.error(f"Invalid deck size: {total_cards}. Deck must contain exactly 20 cards.")
+    else:
+        Hands = run_N_hands(deck, basics, num_simulations)
+        max_turn = 9
+        probabilities = compute_probabilities(Hands, evs, max_turn)
+
+        # Add toggles for each curve
+        st.header("Toggle Curves")
+        curves_to_plot = {}
+        for key in probabilities.keys():
+            curves_to_plot[key] = st.checkbox(f"Show {key}", value=True)
+
+        # Plot and Show Results
+        plt.figure(figsize=(15, 10))
+        for key, show in curves_to_plot.items():
+            if show:
+                x = range(max_turn)
+                y = [p * 100 for p in probabilities[key]]  # Convert probabilities to percentages
+                plt.plot(x, y, label=key, linestyle='-', marker='o')
+        plt.xlabel('Turn')
+        plt.ylabel('Probability (%)')
+        plt.title('Probabilities of EVS Combinations Over Turns')
+        plt.legend()
+        plt.grid(True, linestyle='--', alpha=0.7)
+        st.pyplot(plt.gcf())
+
+        # Save Option
+        save_plot = st.checkbox("Save Plot as PNG")
+        if save_plot:
+            plt.savefig("evs_probabilities.png")
+            st.success("Plot saved as 'evs_probabilities.png'.")
