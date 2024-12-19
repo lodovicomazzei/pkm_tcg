@@ -80,13 +80,12 @@ def run_N_hands(deck, basics, N):
 
 def compute_probabilities(Hands, evs, max_turn):
     # Generate combinations dynamically based on the input evs list
-    from itertools import chain, combinations
 
     def all_combinations(evs):
-        evs_sets = [set(group) for group in evs]
-        all_combos = chain.from_iterable(combinations(evs_sets, r) for r in range(1, len(evs_sets) + 1))
+        evs_lists = [list(group) for group in evs]  # Maintain input order as lists
+        all_combos = chain.from_iterable(combinations(evs_lists, r) for r in range(1, len(evs_lists) + 1))
         return {
-            ' + '.join('[' + ', '.join(group) + ']' for group in combo): set.union(*combo)
+            ' + '.join('[' + ', '.join(group) + ']' for group in combo): set.union(*map(set, combo))
             for combo in all_combos
         }
 
