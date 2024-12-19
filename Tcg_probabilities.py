@@ -196,7 +196,6 @@ if st.button("Run Simulation"):
         st.session_state["max_turn"] = max_turn
 
 # Ensure probabilities are available in session state
-
 if "probabilities" in st.session_state and "max_turn" in st.session_state:
     probabilities = st.session_state["probabilities"]
     max_turn = st.session_state["max_turn"]
@@ -247,3 +246,4 @@ if "probabilities" in st.session_state and "max_turn" in st.session_state:
     if save_plot:
         plt.savefig("evs_probabilities.png")
         st.success("Plot saved as 'evs_probabilities.png'.")
+
