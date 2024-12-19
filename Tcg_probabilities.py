@@ -78,23 +78,48 @@ def run_N_hands(deck, basics, N):
     return Hands
 
 def compute_probabilities(Hands, evs, max_turn):
-    evs_sets = [set(line.keys()) for line in evs]
-    all_combos = chain.from_iterable(combinations(evs_sets, r) for r in range(1, len(evs_sets) + 1))
-    combinations = {
-        ' + '.join('[' + ', '.join(group) + ']' for group in combo): set.union(*combo)
-        for combo in all_combos
-    }
-    counts = {key: [0] * max_turn for key in combinations.keys()}
-    for hands in Hands.values():
+    # Generate combinations dynamically based on the input evs list
+    from itertools import chain, combinations
+
+    def all_combinations(evs):
+        evs_sets = [set(group) for group in evs]
+        all_combos = chain.from_iterable(combinations(evs_sets, r) for r in range(1, len(evs_sets) + 1))
+        return {
+            ' + '.join('[' + ', '.join(group) + ']' for group in combo): set.union(*combo)
+            for combo in all_combos
+        }
+
+    combinations_dict = all_combinations(evs)
+
+    # Initialize a dictionary to store counts for each combination by turn
+    counts = {key: [0] * max_turn for key in combinations_dict.keys()}
+
+    # Iterate through all simulations
+    for sim_id, hands in Hands.items():
+        # Iterate through each turn
         for turn in range(max_turn):
             if turn in hands:
                 hand_set = set(hands[turn])
-                for key, combo in combinations.items():
+                # Check for each combination
+                for key, combo in combinations_dict.items():
                     if combo.issubset(hand_set):
                         counts[key][turn] += 1
+
+    # Convert counts to probabilities
     tot_sims = len(Hands)
     probabilities = {key: [count / tot_sims for count in counts[key]] for key in counts.keys()}
+
     return probabilities
+
+def validate_deck_size(evs, sp):
+    total_cards = sum(sum(line.values()) for line in evs) + sum(sp.values())
+    if total_cards != 20:
+        st.error(f"Invalid deck size: {total_cards} cards. Deck must contain exactly 20 cards.")
+        return False
+    st.success(f"Deck size is valid: {total_cards} cards.")
+    return True
+
+
 
 def plot_all_probabilities(probabilities, max_turn):
     plt.figure(figsize=(15, 10))
@@ -126,8 +151,12 @@ evs = eval(evs_input)
 basics = [list(line.keys())[0] for line in evs]
 
 # Input: SP Cards
-sp_input = st.text_area("Enter Spell Cards with counts (e.g., {'pokeball': 2, 'oak': 2})", "{'pokeball': 2, 'oak': 2}")
+sp_input = st.text_area("Enter Spell Cards with counts (e.g., {'pokeball': 2, 'oak': 2, 'sabrina': 2, 'pokeflute': 1})", "{'pokeball': 2, 'oak': 2, 'sabrina': 2, 'pokeflute': 1}")
 sp = eval(sp_input)
+
+# Streamlit integration for validation
+if not validate_deck_size(evs, sp):
+    st.stop()  # Stop execution if the deck size is invalid
 
 # Input: Number of Simulations
 num_simulations = st.number_input("Enter Number of Simulations", min_value=1, value=10000, step=1)
