@@ -125,6 +125,10 @@ def compute_probabilities(Hands, evs, max_turn):
 
     return probabilities
 
+
+# Plot probabilities for all combinations on the same graph
+import matplotlib.pyplot as plt
+
 def plot_all_probabilities(probabilities, max_turn):
     plt.figure(figsize=(15, 10))
     for key, probs in probabilities.items():
@@ -140,12 +144,17 @@ def plot_all_probabilities(probabilities, max_turn):
     return plt
 
 # Streamlit Interface
+import streamlit as st
 st.title("EVS Probability Simulation")
+
+# Input: Number of Evolution Lines
+st.header("Number of Evolution Lines")
+num_evs = st.number_input("Enter number of evolution lines", min_value=1, value=3, step=1)
 
 # Input: Evolution Lines
 st.header("Enter Evolution Lines and Quantities")
 evs = []
-for i in range(1, 4):  # Allow 3 evolution lines
+for i in range(1, num_evs + 1):
     st.subheader(f"Evolution Line {i}")
     cards = st.text_input(f"Enter cards for line {i} (comma-separated):", key=f"line_{i}")
     quantities = st.text_input(f"Enter quantities for line {i} (comma-separated, same order):", key=f"quantities_{i}")
