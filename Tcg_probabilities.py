@@ -196,22 +196,28 @@ if st.button("Run Simulation"):
         st.session_state["max_turn"] = max_turn
 
 # Ensure probabilities are available in session state
+# Ensure probabilities are available in session state
 if "probabilities" in st.session_state and "max_turn" in st.session_state:
     probabilities = st.session_state["probabilities"]
     max_turn = st.session_state["max_turn"]
 
-    # Select which curves to include
-    st.header("Select Curves to Include")
+    # Initialize or update curves_to_plot in session state
     if "curves_to_plot" not in st.session_state:
         st.session_state["curves_to_plot"] = {key: True for key in probabilities.keys()}
+    else:
+        # Update curves_to_plot to include any new keys from probabilities
+        for key in probabilities.keys():
+            if key not in st.session_state["curves_to_plot"]:
+                st.session_state["curves_to_plot"][key] = True
 
     selected_curves = []
     for key in probabilities.keys():
-        if st.checkbox(f"Include {key}", value=st.session_state["curves_to_plot"][key]):
-            st.session_state["curves_to_plot"][key] = True
+        # Ensure the key exists in curves_to_plot and use it
+        st.session_state["curves_to_plot"][key] = st.checkbox(
+            f"Include {key}", value=st.session_state["curves_to_plot"].get(key, True)
+        )
+        if st.session_state["curves_to_plot"][key]:
             selected_curves.append(key)
-        else:
-            st.session_state["curves_to_plot"][key] = False
 
     # Generate Graph
     if selected_curves:
@@ -241,9 +247,4 @@ if "probabilities" in st.session_state and "max_turn" in st.session_state:
         plt.grid(True, linestyle='--', alpha=0.7)
         st.pyplot(plt.gcf())
 
-    # Save Option
-    save_plot = st.checkbox("Save Plot as PNG")
-    if save_plot:
-        plt.savefig("evs_probabilities.png")
-        st.success("Plot saved as 'evs_probabilities.png'.")
 
