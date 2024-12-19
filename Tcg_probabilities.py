@@ -145,14 +145,14 @@ def plot_all_probabilities(probabilities, max_turn):
     return plt
 # Streamlit Interface
 import streamlit as st
-st.title("EVS Probability Simulation")
+st.title("TCG Pocket - Draw Probability Calculator")
 
 # Input: Number of Evolution Lines
 st.header("Number of Evolution Lines")
 num_evs = st.number_input("Enter number of evolution lines", min_value=1, value=3, step=1)
 
 # Input: Evolution Lines
-st.header("Enter Evolution Lines and Quantities")
+st.header("Enter Evolution Lines and Count")
 evs = []
 for i in range(1, num_evs + 1):
     st.subheader(f"Evolution Line {i}")
@@ -164,7 +164,7 @@ for i in range(1, num_evs + 1):
         evs.append(dict(zip(card_list, quantity_list)))
 
 # Input: Spells
-st.header("Enter Spell Cards and Quantities")
+st.header("Enter Spell Cards and Count")
 sp_cards = st.text_input("Enter spell cards (comma-separated) (IMPORTANT: use 'pball' and 'oak'!!):")
 sp_quantities = st.text_input("Enter spell quantities (comma-separated, same order):")
 sp = {}
@@ -232,7 +232,7 @@ if "probabilities" in st.session_state and "max_turn" in st.session_state:
                 plt.text(xi, yi + 1, f"{yi:.1f}%", ha="center", fontsize=8)  # Offset for clarity
 
         plt.xlabel('Turn')
-        plt.ylabel('Probability (%)')
+        plt.ylabel('Probability to have drawn (%)')
         plt.title('Probabilities of EVS Combinations Over Turns')
         plt.legend()
         plt.grid(True, linestyle='--', alpha=0.7)
