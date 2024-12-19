@@ -267,7 +267,7 @@ if "probabilities" in st.session_state and "max_turn" in st.session_state:
     for key in probabilities.keys():
         # Ensure the key exists in curves_to_plot and use it
         st.session_state["curves_to_plot"][key] = st.checkbox(
-            f"Include {key}", value=st.session_state["curves_to_plot"].get(key, True)
+            f" {key}", value=st.session_state["curves_to_plot"].get(key, True)
         )
         if st.session_state["curves_to_plot"][key]:
             selected_curves.append(key)
