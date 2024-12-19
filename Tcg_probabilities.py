@@ -196,10 +196,19 @@ if st.button("Run Simulation"):
             st.session_state["curves_to_plot"] = {key: True for key in probabilities.keys()}
 
         for key in probabilities.keys():
-            st.session_state["curves_to_plot"][key] = st.checkbox(f"Include {key}", value=st.session_state["curves_to_plot"].get(key, True))
+            st.session_state["curves_to_plot"][key] = st.checkbox(
+                f"Include {key}", value=st.session_state["curves_to_plot"][key]
+            )
 
-        # Generate Graph Button
-        if st.button("Generate Graph", key="generate_graph"):
+        # Display Graph Button
+        if "graph_generated" not in st.session_state:
+            st.session_state["graph_generated"] = False
+
+        if st.button("Generate Graph"):
+            st.session_state["graph_generated"] = True
+
+        # Plot the graph if it has been generated
+        if st.session_state["graph_generated"]:
             plt.figure(figsize=(15, 10))
 
             # Check if any curve is selected
