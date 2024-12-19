@@ -190,58 +190,58 @@ if st.button("Run Simulation"):
         max_turn = 9
         probabilities = compute_probabilities(Hands, evs, max_turn)
 
-        # Select which curves to include before generating the graph
-        st.header("Select Curves to Include")
-        if "curves_to_plot" not in st.session_state:
-            st.session_state["curves_to_plot"] = {key: True for key in probabilities.keys()}
+        # Store probabilities in session state
+        st.session_state["probabilities"] = probabilities
+        st.session_state["max_turn"] = max_turn
 
-        for key in probabilities.keys():
-            st.session_state["curves_to_plot"][key] = st.checkbox(
-                f"Include {key}", value=st.session_state["curves_to_plot"][key]
-            )
+# Ensure probabilities are available in session state
+if "probabilities" in st.session_state and "max_turn" in st.session_state:
+    probabilities = st.session_state["probabilities"]
+    max_turn = st.session_state["max_turn"]
 
-        # Display Graph Button
-        if "graph_generated" not in st.session_state:
-            st.session_state["graph_generated"] = False
+    # Select which curves to include
+    st.header("Select Curves to Include")
+    if "curves_to_plot" not in st.session_state:
+        st.session_state["curves_to_plot"] = {key: True for key in probabilities.keys()}
 
-        if st.button("Generate Graph"):
-            st.session_state["graph_generated"] = True
+    selected_curves = []
+    for key in probabilities.keys():
+        if st.checkbox(f"Include {key}", value=st.session_state["curves_to_plot"][key]):
+            st.session_state["curves_to_plot"][key] = True
+            selected_curves.append(key)
+        else:
+            st.session_state["curves_to_plot"][key] = False
 
-        # Plot the graph if it has been generated
-        if st.session_state["graph_generated"]:
-            plt.figure(figsize=(15, 10))
+    # Generate Graph
+    if selected_curves:
+        plt.figure(figsize=(15, 10))
+        for key in selected_curves:
+            x = range(max_turn)
+            y = [p * 100 for p in probabilities[key]]  # Convert probabilities to percentages
+            plt.plot(x, y, label=key, linestyle='-', marker='o')
 
-            # Check if any curve is selected
-            selected_curves = [key for key, show in st.session_state["curves_to_plot"].items() if show]
+            # Add labels for each point
+            for xi, yi in zip(x, y):
+                plt.text(xi, yi + 1, f"{yi:.1f}%", ha="center", fontsize=8)  # Offset for clarity
 
-            if selected_curves:
-                for key in selected_curves:
-                    x = range(max_turn)
-                    y = [p * 100 for p in probabilities[key]]  # Convert probabilities to percentages
-                    plt.plot(x, y, label=key, linestyle='-', marker='o')
+        plt.xlabel('Turn')
+        plt.ylabel('Probability (%)')
+        plt.title('Probabilities of EVS Combinations Over Turns')
+        plt.legend()
+        plt.grid(True, linestyle='--', alpha=0.7)
+        st.pyplot(plt.gcf())
+    else:
+        # Show a placeholder graph when no curves are selected
+        st.warning("No curves selected. Displaying an empty graph.")
+        plt.figure(figsize=(15, 10))
+        plt.xlabel('Turn')
+        plt.ylabel('Probability (%)')
+        plt.title('No Curves Selected')
+        plt.grid(True, linestyle='--', alpha=0.7)
+        st.pyplot(plt.gcf())
 
-                    # Add labels for each point
-                    for xi, yi in zip(x, y):
-                        plt.text(xi, yi + 1, f"{yi:.1f}%", ha="center", fontsize=8)  # Offset for clarity
-
-                plt.xlabel('Turn')
-                plt.ylabel('Probability (%)')
-                plt.title('Probabilities of EVS Combinations Over Turns')
-                plt.legend()
-                plt.grid(True, linestyle='--', alpha=0.7)
-                st.pyplot(plt.gcf())
-            else:
-                # Show a placeholder graph when no curves are selected
-                st.warning("No curves selected. Displaying an empty graph.")
-                plt.figure(figsize=(15, 10))
-                plt.xlabel('Turn')
-                plt.ylabel('Probability (%)')
-                plt.title('No Curves Selected')
-                plt.grid(True, linestyle='--', alpha=0.7)
-                st.pyplot(plt.gcf())
-
-        # Save Option
-        save_plot = st.checkbox("Save Plot as PNG")
-        if save_plot:
-            plt.savefig("evs_probabilities.png")
-            st.success("Plot saved as 'evs_probabilities.png'.")
+    # Save Option
+    save_plot = st.checkbox("Save Plot as PNG")
+    if save_plot:
+        plt.savefig("evs_probabilities.png")
+        st.success("Plot saved as 'evs_probabilities.png'.")
