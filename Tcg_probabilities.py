@@ -77,82 +77,54 @@ def run_N_hands(deck, basics, N):
         Hands[i] = hands
     return Hands
 
+
 def compute_probabilities(Hands, evs, max_turn):
+    # Generate combinations dynamically based on the input evs list
+    from itertools import chain, combinations
+
+    def all_combinations(evs):
+        evs_sets = [set(group) for group in evs]
+        all_combos = chain.from_iterable(combinations(evs_sets, r) for r in range(1, len(evs_sets) + 1))
+        return {
+            ' + '.join('[' + ', '.join(group) + ']' for group in combo): set.union(*combo)
+            for combo in all_combos
+        }
+
+    combinations_dict = all_combinations(evs)
+
     # Initialize a dictionary to store counts for each combination by turn
+    counts = {key: [0] * max_turn for key in combinations_dict.keys()}
+
+    # Additional categories for EVS of specific lengths
     at_least_one_len_2 = [0] * max_turn
     at_least_one_len_3 = [0] * max_turn
 
     # Iterate through all simulations
-    for hands in Hands.values():
+    for sim_id, hands in Hands.items():
+        # Iterate through each turn
         for turn in range(max_turn):
             if turn in hands:
                 hand_set = set(hands[turn])
 
-                # Check for at least one 2-pokemon evolution line
+                # Check for each combination
+                for key, combo in combinations_dict.items():
+                    if combo.issubset(hand_set):
+                        counts[key][turn] += 1
+
+                # Check for at least one EVS of specific lengths
                 if any(set(group.keys()).issubset(hand_set) for group in evs if len(group) == 2):
                     at_least_one_len_2[turn] += 1
-
-                # Check for at least one 3-pokemon evolution line
                 if any(set(group.keys()).issubset(hand_set) for group in evs if len(group) == 3):
                     at_least_one_len_3[turn] += 1
 
     # Convert counts to probabilities
-    total_sims = len(Hands)
-    probabilities = {
-        "At least one 2-pokemon evolution line": [count / total_sims for count in at_least_one_len_2],
-        "At least one 3-pokemon evolution line": [count / total_sims for count in at_least_one_len_3],
-    }
+    tot_sims = len(Hands)
+    probabilities = {key: [count / tot_sims for count in counts[key]] for key in counts.keys()}
+    probabilities["At least one 2-pokemon evolution line"] = [count / tot_sims for count in at_least_one_len_2]
+    probabilities["At least one 3-pokemon evolution line"] = [count / tot_sims for count in at_least_one_len_3]
 
     return probabilities
 
-
-# def compute_probabilities(Hands, evs, max_turn):
-#     # Generate combinations dynamically based on the input evs list
-#     from itertools import chain, combinations
-
-#     def all_combinations(evs):
-#         evs_sets = [set(group) for group in evs]
-#         all_combos = chain.from_iterable(combinations(evs_sets, r) for r in range(1, len(evs_sets) + 1))
-#         return {
-#             ' + '.join('[' + ', '.join(group) + ']' for group in combo): set.union(*combo)
-#             for combo in all_combos
-#         }
-
-#     combinations_dict = all_combinations(evs)
-
-#     # Initialize a dictionary to store counts for each combination by turn
-#     counts = {key: [0] * max_turn for key in combinations_dict.keys()}
-
-#     # Additional categories for EVS of specific lengths
-#     at_least_one_len_2 = [0] * max_turn
-#     at_least_one_len_3 = [0] * max_turn
-
-#     # Iterate through all simulations
-#     for sim_id, hands in Hands.items():
-#         # Iterate through each turn
-#         for turn in range(max_turn):
-#             if turn in hands:
-#                 hand_set = set(hands[turn])
-#                 # Check for each combination
-#                 for key, combo in combinations_dict.items():
-#                     if combo.issubset(hand_set):
-#                         counts[key][turn] += 1
-#                 # Check for at least one EVS of specific lengths
-#                 for evs_group in evs:
-#                     evs_set = set(evs_group.keys())
-#                     if evs_set.issubset(hand_set):
-#                         if len(evs_group) == 2:
-#                             at_least_one_len_2[turn] += 1
-#                         elif len(evs_group) == 3:
-#                             at_least_one_len_3[turn] += 1
-
-#     # Convert counts to probabilities
-#     tot_sims = len(Hands)
-#     probabilities = {key: [count / tot_sims for count in counts[key]] for key in counts.keys()}
-#     probabilities["At least one 2-pokemon evolution line"] = [count / tot_sims for count in at_least_one_len_2]
-#     probabilities["At least one 3-pokemon evolution line"] = [count / tot_sims for count in at_least_one_len_3]
-
-#     return probabilities
 
 
 def plot_all_probabilities(probabilities, max_turn):
