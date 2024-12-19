@@ -120,14 +120,11 @@ def compute_probabilities(Hands, evs, max_turn):
     # Convert counts to probabilities
     tot_sims = len(Hands)
     probabilities = {key: [count / tot_sims for count in counts[key]] for key in counts.keys()}
-    probabilities["At least one EVS (len 2)"] = [count / tot_sims for count in at_least_one_len_2]
-    probabilities["At least one EVS (len 3)"] = [count / tot_sims for count in at_least_one_len_3]
+    probabilities["At least one 2-pokemon evolution line"] = [count / tot_sims for count in at_least_one_len_2]
+    probabilities["At least one 3-pokemon evolution line"] = [count / tot_sims for count in at_least_one_len_3]
 
     return probabilities
 
-
-# Plot probabilities for all combinations on the same graph
-import matplotlib.pyplot as plt
 
 def plot_all_probabilities(probabilities, max_turn):
     plt.figure(figsize=(15, 10))
@@ -135,6 +132,10 @@ def plot_all_probabilities(probabilities, max_turn):
         x = range(max_turn)
         y = [p * 100 for p in probs]  # Convert probabilities to percentages
         plt.plot(x, y, label=key, linestyle='-', marker='o')
+        
+        # Add labels for each point
+        for xi, yi in zip(x, y):
+            plt.text(xi, yi + 1, f"{yi:.1f}%", ha="center", fontsize=8)  # Offset for clarity
 
     plt.xlabel('Turn')
     plt.ylabel('Probability (%)')
@@ -142,7 +143,6 @@ def plot_all_probabilities(probabilities, max_turn):
     plt.legend()
     plt.grid(True, linestyle='--', alpha=0.7)
     return plt
-
 # Streamlit Interface
 import streamlit as st
 st.title("EVS Probability Simulation")
@@ -198,17 +198,28 @@ if st.button("Run Simulation"):
 
         # Plot and Show Results
         plt.figure(figsize=(15, 10))
-        for key, show in curves_to_plot.items():
-            if show:
+
+        # Check if any curve is selected
+        selected_curves = [key for key, show in curves_to_plot.items() if show]
+
+        if selected_curves:
+            for key in selected_curves:
                 x = range(max_turn)
                 y = [p * 100 for p in probabilities[key]]  # Convert probabilities to percentages
                 plt.plot(x, y, label=key, linestyle='-', marker='o')
-        plt.xlabel('Turn')
-        plt.ylabel('Probability (%)')
-        plt.title('Probabilities of EVS Combinations Over Turns')
-        plt.legend()
-        plt.grid(True, linestyle='--', alpha=0.7)
-        st.pyplot(plt.gcf())
+
+                # Add labels for each point
+                for xi, yi in zip(x, y):
+                    plt.text(xi, yi + 1, f"{yi:.1f}%", ha="center", fontsize=8)  # Offset for clarity
+
+            plt.xlabel('Turn')
+            plt.ylabel('Probability (%)')
+            plt.title('Probabilities of EVS Combinations Over Turns')
+            plt.legend()
+            plt.grid(True, linestyle='--', alpha=0.7)
+            st.pyplot(plt.gcf())
+        else:
+            st.warning("No curves selected. Please select at least one curve to display the graph.")
 
         # Save Option
         save_plot = st.checkbox("Save Plot as PNG")
