@@ -56,10 +56,10 @@ def simulate_draw(deck, basics):
         s = sample_without_replacement(deck, 1)
         card, deck = s[0], s[1]
         hand = hands[t] + card
-        while "pob" in hand:
+        while "pball" in hand:
             s = sample_from_basics(deck, basics, 1)
             bas, deck = s[0], s[1]
-            hand.remove("pob")
+            hand.remove("pball")
             hand += bas
         if "oak" in hand:
             s = sample_without_replacement(deck, 2)
@@ -165,7 +165,7 @@ for i in range(1, num_evs + 1):
 
 # Input: Spells
 st.header("Enter Spell Cards and Quantities")
-sp_cards = st.text_input("Enter spell cards (comma-separated):")
+sp_cards = st.text_input("Enter spell cards (comma-separated) (IMPORTANT: use 'pball' and 'oak'!!):")
 sp_quantities = st.text_input("Enter spell quantities (comma-separated, same order):")
 sp = {}
 if sp_cards and sp_quantities:
