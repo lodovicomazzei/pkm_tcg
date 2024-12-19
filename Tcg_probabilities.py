@@ -192,14 +192,18 @@ if st.button("Run Simulation"):
 
         # Select which curves to include before generating the graph
         st.header("Select Curves to Include")
-        curves_to_plot = {key: st.checkbox(f"Include {key}", value=True) for key in probabilities.keys()}
+        if "curves_to_plot" not in st.session_state:
+            st.session_state["curves_to_plot"] = {key: True for key in probabilities.keys()}
+
+        for key in probabilities.keys():
+            st.session_state["curves_to_plot"][key] = st.checkbox(f"Include {key}", value=st.session_state["curves_to_plot"][key])
 
         # Generate Graph Button
         if st.button("Generate Graph"):
             plt.figure(figsize=(15, 10))
 
             # Check if any curve is selected
-            selected_curves = [key for key, show in curves_to_plot.items() if show]
+            selected_curves = [key for key, show in st.session_state["curves_to_plot"].items() if show]
 
             if selected_curves:
                 for key in selected_curves:
@@ -232,4 +236,3 @@ if st.button("Run Simulation"):
         if save_plot:
             plt.savefig("evs_probabilities.png")
             st.success("Plot saved as 'evs_probabilities.png'.")
-
