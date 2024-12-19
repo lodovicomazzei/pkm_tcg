@@ -1,0 +1,3 @@
+streamilt
+matplotlib
+numpy
