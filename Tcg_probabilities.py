@@ -97,6 +97,7 @@ def compute_probabilities(Hands, evs, max_turn):
     # Additional categories for EVS of specific lengths
     at_least_one_len_2 = [0] * max_turn
     at_least_one_len_3 = [0] * max_turn
+    at_least_one_any = [0] * max_turn
 
     # Iterate through all simulations
     for sim_id, hands in Hands.items():
@@ -116,13 +117,65 @@ def compute_probabilities(Hands, evs, max_turn):
                 if any(set(group.keys()).issubset(hand_set) for group in evs if len(group) == 3):
                     at_least_one_len_3[turn] += 1
 
+                # Check for any EVS line (of length 2 or greater)
+                if any(set(group.keys()).issubset(hand_set) for group in evs if len(group) >= 2):
+                    at_least_one_any[turn] += 1
+
+
     # Convert counts to probabilities
     tot_sims = len(Hands)
     probabilities = {key: [count / tot_sims for count in counts[key]] for key in counts.keys()}
     probabilities["At least one 2-pokemon evolution line"] = [count / tot_sims for count in at_least_one_len_2]
     probabilities["At least one 3-pokemon evolution line"] = [count / tot_sims for count in at_least_one_len_3]
+    probabilities["At least one evolution line"] = [count / tot_sims for count in at_least_one_any]
 
     return probabilities
+
+# def compute_probabilities(Hands, evs, max_turn):
+#     # Generate combinations dynamically based on the input evs list
+
+#     def all_combinations(evs):
+#         evs_lists = [list(group) for group in evs]  # Maintain input order as lists
+#         all_combos = chain.from_iterable(combinations(evs_lists, r) for r in range(1, len(evs_lists) + 1))
+#         return {
+#             ' + '.join('[' + ', '.join(group) + ']' for group in combo): set.union(*map(set, combo))
+#             for combo in all_combos
+#         }
+
+#     combinations_dict = all_combinations(evs)
+
+#     # Initialize a dictionary to store counts for each combination by turn
+#     counts = {key: [0] * max_turn for key in combinations_dict.keys()}
+
+#     # Additional categories for EVS of specific lengths
+#     at_least_one_len_2 = [0] * max_turn
+#     at_least_one_len_3 = [0] * max_turn
+
+#     # Iterate through all simulations
+#     for sim_id, hands in Hands.items():
+#         # Iterate through each turn
+#         for turn in range(max_turn):
+#             if turn in hands:
+#                 hand_set = set(hands[turn])
+
+#                 # Check for each combination
+#                 for key, combo in combinations_dict.items():
+#                     if combo.issubset(hand_set):
+#                         counts[key][turn] += 1
+
+#                 # Check for at least one EVS of specific lengths
+#                 if any(set(group.keys()).issubset(hand_set) for group in evs if len(group) == 2):
+#                     at_least_one_len_2[turn] += 1
+#                 if any(set(group.keys()).issubset(hand_set) for group in evs if len(group) == 3):
+#                     at_least_one_len_3[turn] += 1
+
+#     # Convert counts to probabilities
+#     tot_sims = len(Hands)
+#     probabilities = {key: [count / tot_sims for count in counts[key]] for key in counts.keys()}
+#     probabilities["At least one 2-pokemon evolution line"] = [count / tot_sims for count in at_least_one_len_2]
+#     probabilities["At least one 3-pokemon evolution line"] = [count / tot_sims for count in at_least_one_len_3]
+
+#     return probabilities
 
 
 
