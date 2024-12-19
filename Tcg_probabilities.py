@@ -13,10 +13,11 @@ from itertools import chain, combinations
 import random
 
 # Function Definitions
-def make_deck(pk, sp):
+def make_deck(evs, sp):
     deck = []
-    for card, count in pk.items():
-        deck.extend([card] * count)
+    for line in evs:
+        for card, count in line.items():
+            deck.extend([card] * count)
     for card, count in sp.items():
         deck.extend([card] * count)
     return deck
@@ -77,7 +78,7 @@ def run_N_hands(deck, basics, N):
     return Hands
 
 def compute_probabilities(Hands, evs, max_turn):
-    evs_sets = [set(group) for group in evs]
+    evs_sets = [set(line.keys()) for line in evs]
     all_combos = chain.from_iterable(combinations(evs_sets, r) for r in range(1, len(evs_sets) + 1))
     combinations = {
         ' + '.join('[' + ', '.join(group) + ']' for group in combo): set.union(*combo)
@@ -114,12 +115,18 @@ def plot_all_probabilities(probabilities, max_turn):
 # Streamlit Interface
 st.title("EVS Probability Simulation")
 
-# Input: EVS Lines
-evs_input = st.text_area("Enter EVS Lines (e.g., [['kof', 'wez'], ['ven', 'whi', 'sco'], ['mew']])", "[['kof', 'wez'], ['ven', 'whi', 'sco'], ['mew']]")
+# Input: Evolution Lines and Quantities
+evs_input = st.text_area(
+    "Enter Evolution Lines and Quantities (e.g., [{'bulba': 2, 'ivy': 2, 'veno': 2}, {'geodude': 2, 'graveler': 2, 'golem': 2}, {'mew': 1}])",
+    "[{'bulba': 2, 'ivy': 2, 'veno': 2}, {'geodude': 2, 'graveler': 2, 'golem': 2}, {'mew': 1}]"
+)
 evs = eval(evs_input)
 
+# Determine Basics
+basics = [list(line.keys())[0] for line in evs]
+
 # Input: SP Cards
-sp_input = st.text_area("Enter SP Cards with counts (e.g., {'pob': 2, 'oak': 2})", "{'pob': 2, 'oak': 2}")
+sp_input = st.text_area("Enter Spell Cards with counts (e.g., {'pokeball': 2, 'oak': 2})", "{'pokeball': 2, 'oak': 2}")
 sp = eval(sp_input)
 
 # Input: Number of Simulations
@@ -127,9 +134,7 @@ num_simulations = st.number_input("Enter Number of Simulations", min_value=1, va
 
 # Run Simulation Button
 if st.button("Run Simulation"):
-    pk = {card: 2 for card in [group[0] for group in evs]}
-    deck = make_deck(pk, sp)
-    basics = [group[0] for group in evs]
+    deck = make_deck(evs, sp)
     Hands = run_N_hands(deck, basics, num_simulations)
     max_turn = 9
     probabilities = compute_probabilities(Hands, evs, max_turn)
