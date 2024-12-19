@@ -207,11 +207,11 @@ if st.button("Run Simulation"):
                 x = range(max_turn)
                 y = [p * 100 for p in probabilities[key]]  # Convert probabilities to percentages
                 plt.plot(x, y, label=key, linestyle='-', marker='o')
-
+        
                 # Add labels for each point
                 for xi, yi in zip(x, y):
                     plt.text(xi, yi + 1, f"{yi:.1f}%", ha="center", fontsize=8)  # Offset for clarity
-
+        
             plt.xlabel('Turn')
             plt.ylabel('Probability (%)')
             plt.title('Probabilities of EVS Combinations Over Turns')
@@ -219,8 +219,14 @@ if st.button("Run Simulation"):
             plt.grid(True, linestyle='--', alpha=0.7)
             st.pyplot(plt.gcf())
         else:
-            st.warning("No curves selected. Please select at least one curve to display the graph.")
-
+            # Show a placeholder graph when no curves are selected
+            st.warning("No curves selected. Displaying an empty graph.")
+            plt.figure(figsize=(15, 10))
+            plt.xlabel('Turn')
+            plt.ylabel('Probability (%)')
+            plt.title('No Curves Selected')
+            plt.grid(True, linestyle='--', alpha=0.7)
+            st.pyplot(plt.gcf())
         # Save Option
         save_plot = st.checkbox("Save Plot as PNG")
         if save_plot:
