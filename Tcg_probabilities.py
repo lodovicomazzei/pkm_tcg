@@ -179,6 +179,7 @@ basics = [list(line.keys())[0] for line in evs]
 # Input: Number of Simulations
 num_simulations = st.number_input("Enter Number of Simulations", min_value=1, value=10000, step=1)
 
+
 # Run Simulation Button
 if st.button("Run Simulation"):
     deck = make_deck(evs, sp)
@@ -188,151 +189,61 @@ if st.button("Run Simulation"):
     else:
         Hands = run_N_hands(deck, basics, num_simulations)
         max_turn = 9
+        probabilities = compute_probabilities(Hands, evs, max_turn)
 
-        # Correct probabilities computation to ensure no double counting
-        def compute_corrected_probabilities(Hands, evs, max_turn):
-            probabilities = {key: [0] * max_turn for key in ["At least one 2-pokemon evolution line", "At least one 3-pokemon evolution line"]}
+        # Store probabilities in session state
+        st.session_state["probabilities"] = probabilities
+        st.session_state["max_turn"] = max_turn
 
-            for hands in Hands.values():
-                for turn in range(max_turn):
-                    if turn in hands:
-                        hand_set = set(hands[turn])
+# Ensure probabilities are available in session state
 
-                        # Check for at least one 2-pokemon evolution line
-                        found_2_pokemon = False
-                        for group in evs:
-                            if len(group) == 2 and not found_2_pokemon:
-                                if set(group.keys()).issubset(hand_set):
-                                    probabilities["At least one 2-pokemon evolution line"][turn] += 1
-                                    found_2_pokemon = True
+if "probabilities" in st.session_state and "max_turn" in st.session_state:
+    probabilities = st.session_state["probabilities"]
+    max_turn = st.session_state["max_turn"]
 
-                        # Check for at least one 3-pokemon evolution line
-                        found_3_pokemon = False
-                        for group in evs:
-                            if len(group) == 3 and not found_3_pokemon:
-                                if set(group.keys()).issubset(hand_set):
-                                    probabilities["At least one 3-pokemon evolution line"][turn] += 1
-                                    found_3_pokemon = True
+    # Select which curves to include
+    st.header("Select Curves to Include")
+    if "curves_to_plot" not in st.session_state:
+        st.session_state["curves_to_plot"] = {key: True for key in probabilities.keys()}
 
-            total_sims = len(Hands)
-            for key in probabilities:
-                probabilities[key] = [count / total_sims for count in probabilities[key]]
+    selected_curves = []
+    for key in probabilities.keys():
+        if st.checkbox(f"Include {key}", value=st.session_state["curves_to_plot"][key]):
+            st.session_state["curves_to_plot"][key] = True
+            selected_curves.append(key)
+        else:
+            st.session_state["curves_to_plot"][key] = False
 
-            return probabilities
+    # Generate Graph
+    if selected_curves:
+        plt.figure(figsize=(15, 10))
+        for key in selected_curves:
+            x = range(max_turn)
+            y = [p * 100 for p in probabilities[key]]  # Convert probabilities to percentages
+            plt.plot(x, y, label=key, linestyle='-', marker='o')
 
-        probabilities = compute_corrected_probabilities(Hands, evs, max_turn)
+            # Add labels for each point
+            for xi, yi in zip(x, y):
+                plt.text(xi, yi + 1, f"{yi:.1f}%", ha="center", fontsize=8)  # Offset for clarity
 
-        # Select which curves to include before generating the graph
-        st.header("Select Curves to Include")
-        if "curves_to_plot" not in st.session_state:
-            st.session_state["curves_to_plot"] = {key: True for key in probabilities.keys()}
+        plt.xlabel('Turn')
+        plt.ylabel('Probability (%)')
+        plt.title('Probabilities of EVS Combinations Over Turns')
+        plt.legend()
+        plt.grid(True, linestyle='--', alpha=0.7)
+        st.pyplot(plt.gcf())
+    else:
+        # Show a placeholder graph when no curves are selected
+        st.warning("No curves selected. Displaying an empty graph.")
+        plt.figure(figsize=(15, 10))
+        plt.xlabel('Turn')
+        plt.ylabel('Probability (%)')
+        plt.title('No Curves Selected')
+        plt.grid(True, linestyle='--', alpha=0.7)
+        st.pyplot(plt.gcf())
 
-        for key in probabilities.keys():
-            st.session_state["curves_to_plot"][key] = st.checkbox(f"Include {key}", value=st.session_state["curves_to_plot"].get(key, True))
-
-        # Generate Graph Button
-        if st.button("Generate Graph", key="generate_graph"):
-            plt.figure(figsize=(15, 10))
-
-            # Check if any curve is selected
-            selected_curves = [key for key, show in st.session_state["curves_to_plot"].items() if show]
-
-            if selected_curves:
-                for key in selected_curves:
-                    x = range(max_turn)
-                    y = [p * 100 for p in probabilities[key]]  # Convert probabilities to percentages
-                    plt.plot(x, y, label=key, linestyle='-', marker='o')
-
-                    # Add labels for each point
-                    for xi, yi in zip(x, y):
-                        plt.text(xi, yi + 1, f"{yi:.1f}%", ha="center", fontsize=8)  # Offset for clarity
-
-                plt.xlabel('Turn')
-                plt.ylabel('Probability (%)')
-                plt.title('Probabilities of EVS Combinations Over Turns')
-                plt.legend()
-                plt.grid(True, linestyle='--', alpha=0.7)
-                st.pyplot(plt.gcf())
-            else:
-                # Show a placeholder graph when no curves are selected
-                st.warning("No curves selected. Displaying an empty graph.")
-                plt.figure(figsize=(15, 10))
-                plt.xlabel('Turn')
-                plt.ylabel('Probability (%)')
-                plt.title('No Curves Selected')
-                plt.grid(True, linestyle='--', alpha=0.7)
-                st.pyplot(plt.gcf())
-
-        # Save Option
-        save_plot = st.checkbox("Save Plot as PNG")
-        if save_plot:
-            plt.savefig("evs_probabilities.png")
-            st.success("Plot saved as 'evs_probabilities.png'.")
-
-
-# if st.button("Run Simulation"):
-#     deck = make_deck(evs, sp)
-#     total_cards = len(deck)
-#     if total_cards != 20:
-#         st.error(f"Invalid deck size: {total_cards}. Deck must contain exactly 20 cards.")
-#     else:
-#         Hands = run_N_hands(deck, basics, num_simulations)
-#         max_turn = 9
-#         probabilities = compute_probabilities(Hands, evs, max_turn)
-
-#         # Store probabilities in session state
-#         st.session_state["probabilities"] = probabilities
-#         st.session_state["max_turn"] = max_turn
-
-# # Ensure probabilities are available in session state
-
-# if "probabilities" in st.session_state and "max_turn" in st.session_state:
-#     probabilities = st.session_state["probabilities"]
-#     max_turn = st.session_state["max_turn"]
-
-#     # Select which curves to include
-#     st.header("Select Curves to Include")
-#     if "curves_to_plot" not in st.session_state:
-#         st.session_state["curves_to_plot"] = {key: True for key in probabilities.keys()}
-
-#     selected_curves = []
-#     for key in probabilities.keys():
-#         if st.checkbox(f"Include {key}", value=st.session_state["curves_to_plot"][key]):
-#             st.session_state["curves_to_plot"][key] = True
-#             selected_curves.append(key)
-#         else:
-#             st.session_state["curves_to_plot"][key] = False
-
-#     # Generate Graph
-#     if selected_curves:
-#         plt.figure(figsize=(15, 10))
-#         for key in selected_curves:
-#             x = range(max_turn)
-#             y = [p * 100 for p in probabilities[key]]  # Convert probabilities to percentages
-#             plt.plot(x, y, label=key, linestyle='-', marker='o')
-
-#             # Add labels for each point
-#             for xi, yi in zip(x, y):
-#                 plt.text(xi, yi + 1, f"{yi:.1f}%", ha="center", fontsize=8)  # Offset for clarity
-
-#         plt.xlabel('Turn')
-#         plt.ylabel('Probability (%)')
-#         plt.title('Probabilities of EVS Combinations Over Turns')
-#         plt.legend()
-#         plt.grid(True, linestyle='--', alpha=0.7)
-#         st.pyplot(plt.gcf())
-#     else:
-#         # Show a placeholder graph when no curves are selected
-#         st.warning("No curves selected. Displaying an empty graph.")
-#         plt.figure(figsize=(15, 10))
-#         plt.xlabel('Turn')
-#         plt.ylabel('Probability (%)')
-#         plt.title('No Curves Selected')
-#         plt.grid(True, linestyle='--', alpha=0.7)
-#         st.pyplot(plt.gcf())
-
-#     # Save Option
-#     save_plot = st.checkbox("Save Plot as PNG")
-#     if save_plot:
-#         plt.savefig("evs_probabilities.png")
-#         st.success("Plot saved as 'evs_probabilities.png'.")
+    # Save Option
+    save_plot = st.checkbox("Save Plot as PNG")
+    if save_plot:
+        plt.savefig("evs_probabilities.png")
+        st.success("Plot saved as 'evs_probabilities.png'.")
